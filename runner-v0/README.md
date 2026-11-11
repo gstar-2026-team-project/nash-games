@@ -1,6 +1,6 @@
 # Runner v0
 
-A tiny HTML game for testing our env interface before we build the real game. It is a draft for team discussion (meeting 2026-11-11).
+A tiny HTML game for testing our env interface before we build the real game.
 
 The player runs automatically. **Small red boxes**: jump (Space). **Tall orange bars** (they come down from the top and stop just above the ground): duck under them (hold Down). The score goes up 1 per tick; you lose when you touch anything. A run ends after 60 s of game time.
 
@@ -106,14 +106,8 @@ What this shows:
 | `browser-test.js` | 5 page checks: keyboard, clock, click, late plan, paused mode |
 | `play.js` | the paused vs live experiment → `results.md` |
 
-## Questions for the team
+## Known limits
 
-1. Do we keep **both modes** (paused and live) in the interface? I think yes: the gap between them is the measurement.
-2. Should **plans/macros** (`setPlan`) be part of the standard interface, or only something a harness builds on top?
-3. What does the LLM get? A screenshot every k ticks (cost: ~1k+ tokens per frame), a short clip, or numbers? These bots cheat by reading numbers.
-4. **The time ruler is a hint.** It turns "judge the distance" into "read a number", so it makes the game easier for a model. Should it be switchable (e.g. `?ruler=0`), with every model measured both ways to see how much the visual hint helps? (Not built yet.)
-5. Next step: plug in a real model (frontier plus a small open model) as the "think" step. Then, the arena game with click + all 7 buttons.
-
-Known limits:
 - Live timing has some noise; the same setting can vary by a few ticks between runs.
 - The first obstacle always comes at the same time; only its type changes with the seed.
+- The time ruler is a visual hint: it makes timing easier to read from a frame, so screenshot results with and without it are not directly comparable.
