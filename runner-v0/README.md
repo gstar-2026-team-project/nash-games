@@ -2,7 +2,9 @@
 
 A tiny HTML game for testing our env interface before we build the real game. It is a draft for team discussion (meeting 2026-11-11).
 
-The player runs automatically. **Red boxes**: jump (Space). **Orange hanging bars**: duck (hold Down). The score goes up 1 per tick; you lose when you touch anything. A run ends after 60 s of game time.
+The player runs automatically. **Small red boxes**: jump (Space). **Tall orange bars** (they come down from the top and stop just above the ground): duck under them (hold Down). The score goes up 1 per tick; you lose when you touch anything. A run ends after 60 s of game time.
+
+On screen: the **time ruler** on the ground shows when an obstacle will hit you (an obstacle's left edge at the "1s" mark hits 1 s of game time later), and one guidance line under it says which key goes with which colour.
 
 | start | jump | duck | crash |
 |---|---|---|---|
@@ -41,7 +43,7 @@ It follows the pending team interface: frames at a regular interval, actions at 
 
 ## First result: thinking time only hurts when the game does not wait
 
-Both bots read the numbers (`env.state()`) and are perfect when given time; neither is an LLM. "Think" is a fake wait standing in for an LLM call. The runs are 20 s long with 3 seeds; the full table is in `results.md`.
+Both bots read the numbers (`env.state()`) and are perfect when given time; neither is an LLM. "Think" is a fake wait standing in for an LLM call. The runs are 20 s long with 3 seeds; the full table is in `results.md`. Re-run 2026-11-11 after the clarity pass (drawing only): same numbers.
 
 | bot | game clock | think 0 ms | 250 ms | 1 s | 2 s |
 |---|---|---|---|---|---|
@@ -51,6 +53,15 @@ Both bots read the numbers (`env.state()`) and are perfect when given time; neit
 | planner bot, live | 12 ticks/s (half speed) | 100% | 100% | 100% | **100%** |
 
 21% means the bot crashed into the first obstacle, the same score as doing nothing.
+
+**Played by sight (2026-11-11).** Claude Code played from screenshots only (downscaled to 384 px, no `env.state()`), sending timed plans, seed 5, before the clarity pass:
+
+| player | game clock | time per decision | result |
+|---|---|---|---|
+| Claude by sight, **paused** | waits | any | 30 s survived (720/720), 13 decisions |
+| Claude by sight, live | 24 ticks/s | ~8.5 s from frame to plan | crashed into the first bar at 4.3 s (103, = doing nothing) |
+
+What was hard to see, and what changed: the bar's bottom is only 20 px lower than the player's head, so "must I duck?" was not obvious (bars are now drawn down from the top, so they read as "go under"); the thin ropes were the most visible lines on screen (removed); timing needed pixel measuring (time ruler added); the small HUD line was ~9 px tall after downscaling (now larger); the crash banner hid the crash (moved up).
 
 What this shows:
 1. **Paused results say nothing about live play.** The same bot goes from 100% to 21% with only 0.25 s of thinking. Game-TARS and SpeedrunBench report paused or offline numbers.

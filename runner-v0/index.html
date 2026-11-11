@@ -44,33 +44,49 @@ function draw() {
   ctx.fillStyle = "#dfefff"; ctx.fillRect(0, 0, R.SIZE, R.SIZE);          // sky
   ctx.fillStyle = "#7a5c3a"; ctx.fillRect(0, R.GROUND, R.SIZE, R.SIZE);   // ground
 
+  // Time ruler on the ground: an obstacle at the "1s" mark hits the player 1 s (24 ticks) later.
+  const front = R.PLAYER_X + R.PLAYER_W;
+  ctx.fillStyle = "#fff"; ctx.font = "bold 20px monospace";
+  for (let t = 0.5; front + game.speed * 24 * t < R.SIZE - 30; t += 0.5) {
+    const x = front + game.speed * 24 * t;
+    const whole = t % 1 === 0;
+    ctx.fillRect(x - 1, R.GROUND, 3, whole ? 22 : 10);
+    if (whole) ctx.fillText(t + "s", x - 12, R.GROUND + 44);
+  }
+
+  // One line of guidance, always on screen, below the play area.
+  ctx.font = "bold 24px monospace";
+  ctx.fillStyle = "#e53935"; ctx.fillRect(20, 700, 24, 24);
+  ctx.fillStyle = "#fff"; ctx.fillText("JUMP (Space)", 52, 721);
+  ctx.fillStyle = "#ff9800"; ctx.fillRect(330, 690, 24, 34);
+  ctx.fillStyle = "#fff"; ctx.fillText("DUCK (hold Down)", 362, 721);
+
   for (const o of game.obstacles) {
     const b = R.obstacleBox(o);
-    if (o.kind === "high") {
-      ctx.fillStyle = "#555"; ctx.fillRect(b.left + 28, 0, 4, b.top);     // rope
-      ctx.fillStyle = "#e08a00";
-    } else {
-      ctx.fillStyle = "#c62828";
-    }
-    ctx.fillRect(b.left, b.top, b.right - b.left, b.bottom - b.top);
+    // A bar is drawn from the top of the screen: it cannot be jumped, only ducked under.
+    const top = o.kind === "high" ? 0 : b.top;
+    ctx.fillStyle = o.kind === "high" ? "#ff9800" : "#e53935";
+    ctx.fillRect(b.left, top, b.right - b.left, b.bottom - top);
+    ctx.lineWidth = 4; ctx.strokeStyle = "#000";
+    ctx.strokeRect(b.left + 2, top + 2, b.right - b.left - 4, b.bottom - top - 4);
   }
 
   const p = R.playerBox(game);
   ctx.fillStyle = "#1e50c8"; ctx.fillRect(p.left, p.top, p.right - p.left, p.bottom - p.top);
 
-  ctx.fillStyle = "rgba(255,255,255,0.85)"; ctx.fillRect(10, 10, 470, 105);  // panel behind the text
+  ctx.fillStyle = "rgba(255,255,255,0.9)"; ctx.fillRect(10, 10, 470, 110);  // panel behind the text
   ctx.fillStyle = "#000"; ctx.font = "28px monospace";
   ctx.fillText("score " + game.score, 20, 40);
   ctx.fillText("time " + (game.tick / 24).toFixed(1) + "s (game time)", 20, 75);
-  ctx.font = "18px monospace";
-  ctx.fillText("mode " + mode + (mode === "live" ? "  " + tps + " ticks/s" : "") + "  delay " + game.actionDelay, 20, 105);
+  ctx.font = "22px monospace";
+  ctx.fillText("mode " + mode + (mode === "live" ? " " + tps + " ticks/s" : "") + "  delay " + game.actionDelay, 20, 108);
 
-  if (game.done) {
-    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(0, 300, R.SIZE, 120);
+  if (game.done) {                    // above the play area, so the crash itself stays visible
+    ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0, 140, R.SIZE, 110);
     ctx.fillStyle = "#fff"; ctx.font = "40px monospace";
-    ctx.fillText(game.result.toUpperCase() + "  score " + game.score, 150, 370);
+    ctx.fillText(game.result.toUpperCase() + "  score " + game.score, 150, 200);
     ctx.font = "20px monospace";
-    ctx.fillText("press R to restart", 280, 405);
+    ctx.fillText("press R to restart", 280, 235);
   }
 }
 
