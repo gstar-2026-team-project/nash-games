@@ -26,15 +26,35 @@ The game runs in two modes:
 
 21% = crashed at the first obstacle. Paused hides the problem; live, a slow agent fails unless it plans ahead, and an obstacle is visible only ~2.7 s before it hits. Bots: 20 s runs, seeds 1–3 ([full table](runner-v0/results.md)). Claude: one 30 s run, seed 5.
 
-## Gaps this can fill
-
-- Most game-agent results are reported paused. This game measures the same agent paused and live.
-- Action chunking (timed plans) has not been tested for LLM game agents. The env supports it directly (`setPlan`).
-- Few realtime tasks use pixels and low-level buttons while staying easy for humans.
-- Post-training against a live clock is open.
-
 ## Open questions
 
 - How fast must a pixel-reading model be to survive live with timed plans? (Real API/Inference latency.)
 - How much does the on-screen time ruler help a model reading frames?
 - Which clock for training: wall clock, or a reproducible token clock / latency injection?
+
+## Literature review (short)
+
+A short version for this repo. The full review is [huikang-literature-review](https://github.com/gstar-2026-team-project/huikang-literature-review).
+
+**1. The loop.** A game or computer-use agent runs *frame → think → action*, again and again.
+
+**2. The problem.** Most benchmarks let the world wait while the model thinks. A real game does not: at 24 FPS, 2 s of thinking means 48 frames missed.
+
+**3. How people deal with it.**
+
+| idea | how | example |
+|---|---|---|
+| Think less | reason only at key moments, act directly otherwise | [Game-TARS](https://arxiv.org/abs/2510.23691) (sparse thinking). On Doom, no thinking scored 13.2 and thinking every step 7.2 |
+| Don't think | map video straight to actions, no LLM | [VPT](https://arxiv.org/abs/2206.11795), [FDM-1](https://si.inc/posts/fdm1/) (company claims only) |
+| Two loops | a reasoning model plans in the background; a fast non-reasoning model acts before each deadline | AgileThinker in [RealtimeGym](https://arxiv.org/abs/2511.04898): under rising time pressure 0.90 → 0.58, vs planning alone 0.92 → 0.05 |
+| Action chunking | send a short plan, keep thinking while it runs | [Real-time chunking](https://arxiv.org/abs/2506.07339) (robotics): robots keep working with over 300 ms of model latency |
+
+**4. How results are measured.**
+- **Paused:** the game waits for every action. Game-TARS, VPT and SpeedrunBench (scored in frames, its main results are offline action tapes) run this way.
+- **Live:** the game moves on while the model thinks, by wall clock or by a token budget (RealtimeGym uses text observations and a token clock).
+- The gap between the two is the cost of thinking time. Runner v0 measures both for the same agent.
+
+**5. Gaps this game can fill.**
+- Most game-agent results are paused. Live results with **pixels** and low-level buttons on tasks that are easy for humans are rare.
+- Action chunking has not been tested for LLM game agents. The env supports it directly (`setPlan`).
+- Post-training against a live clock is open.
