@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Runner v0</title>
+<style>
+  body { margin: 0; background: #222; display: flex; justify-content: center; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="screen" width="768" height="768"></canvas>
+<script src="game.js"></script>
+<script>
+// Runner v0: drawing, keyboard, and the env API that bots use.
+//
+// Open in a browser to play: Space = jump, Down arrow = duck, R = restart.
+// URL options: ?seed=1&tps=24&delay=0&mode=live   (mode = live or paused; tps = ticks per second)
+//
+//   live   : the game runs on its own at 24 ticks per second, like a real game.
+//            A bot calls env.setAction(action); that action is held until the next call.
+//            Or env.setPlan(steps, fromTick): do each { buttons, ticks } step in turn, then
+//            hold nothing. fromTick = the tick of the frame the plan was made from; the game
+//            skips the part of the plan that is already in the past when it arrives.
+//            Example "wait 10 ticks, then jump", planned from the frame at tick 100:
+//            env.setPlan([{ buttons: [], ticks: 10 }, { buttons: ["space"], ticks: 1 }], 100)
+//   paused : the game only moves when a bot calls env.step(action). Thinking time is free.
+
+let tps = 24;                               // live game clock: ticks per second (24 = normal)
+const canvas = document.getElementById("screen");
+const ctx = canvas.getContext("2d");
+const params = new URLSearchParams(location.search);
+
+let game = null;
+let mode = "live";
+let plan = [];                              // live mode: list of { buttons, ticks } still to do
+let keys = [];                              // buttons a human is holding on the keyboard
+let clickOnce = null;                       // a canvas click is sent for one tick only
+let timer = null;
+let startTime = 0;
+
+function draw() {
+  const R = Runner;
+  ctx.fillStyle = "#dfefff"; ctx.fillRect(0, 0, R.SIZE, R.SIZE);          // sky
+  ctx.fillStyle = "#7a5c3a"; ctx.fillRect(0, R.GROUND, R.SIZE, R.SIZE);   // ground
+
+  for (const o of game.obstacles) {
+    const b = R.obstacleBox(o);
+    if (o.kind === "high") {
+      ctx.fillStyle = "#555"; ctx.fillRect(b.left + 28, 0, 4, b.top);     // rope
+      ctx.fillStyle = "#e08a00";
+    } else {
+      ctx.fillStyle = "#c62828";
+    }
+    ctx.fillRect(b.left, b.top, b.right - b.left, b.bottom - b.top);
+  }
+
+  const p = R.playerBox(game);
+  ctx.fillStyle = "#1e50c8"; ctx.fillRect(p.left, p.top, p.right - p.left, p.bottom - p.top);
+
+  ctx.fillStyle = "rgba(255,255,255,0.85)"; ctx.fillRect(10, 10, 470, 105);  // panel behind the text
+  ctx.fillStyle = "#000"; ctx.font = "28px monospace";
+  ctx.fillText("score " + game.score, 20, 40);
+  ctx.fillText("time " + (game.tick / 24).toFixed(1) + "s (game time)", 20, 75);
+  ctx.font = "18px monospace";
+  ctx.fillText("mode " + mode + (mode === "live" ? "  " + tps + " ticks/s" : "") + "  delay " + game.actionDelay, 20, 105);
+
+  if (game.done) {
+    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(0, 300, R.SIZE, 120);
+    ctx.fillStyle = "#fff"; ctx.font = "40px monospace";
+    ctx.fillText(game.result.toUpperCase() + "  score " + game.score, 150, 370);
+    ctx.font = "20px monospace";
+    ctx.fillText("press R to restart", 280, 405);
+  }
+}
+
+// Live mode: run as many ticks as the wall clock says should have happened.
+function liveLoop() {
+  const due = Math.floor((performance.now() - startTime) / (1000 / tps));
+  while (game.tick < due && !game.done) {
+    while (plan.length && plan[0].ticks <= 0) plan.shift();
+    const fromPlan = plan.length ? plan[0].buttons : [];
+    if (plan.length) plan[0].ticks -= 1;
+    const action = { buttons: [...new Set(fromPlan.concat(keys))], click: clickOnce };
+    clickOnce = null;
+    Runner.step(game, action);
+  }
+  draw();
+  if (game.done) stopClock();
+}
+
+function stopClock() { if (timer) { clearInterval(timer); timer = null; } }
+
+function startClock() {
+  stopClock();
+  startTime = performance.now();
+  timer = setInterval(liveLoop, 1000 / tps / 2);
+}
+
+// The env API. Bots (play.js) only talk to the game through this.
+window.env = {
+  reset(options = {}) {
+    stopClock();
+    mode = options.mode ?? "live";
+    tps = options.tps ?? 24;
+    game = Runner.newGame({ seed: options.seed, speed: options.speed, actionDelay: options.actionDelay, maxTicks: options.maxTicks });
+    plan = []; keys = [];
+    draw();
+    if (mode === "live") startClock();
+    return Runner.getState(game);
+  },
+  step(action) {                      // paused mode only
+    if (mode !== "paused") throw new Error("step() is for paused mode; use setAction() in live mode");
+    const out = Runner.step(game, action);
+    draw();
+    return { ...out, state: Runner.getState(game) };
+  },
+  setAction(action) {                 // live mode: hold this action until the next call
+    plan = [{ buttons: (action && action.buttons) || [], ticks: Infinity }];
+    if (action && action.click) clickOnce = action.click;
+  },
+  setPlan(steps, fromTick) {          // live mode: a short list of timed steps (a "macro")
+    plan = steps.map((s) => ({ buttons: s.buttons || [], ticks: s.ticks }));
+    let late = fromTick === undefined ? 0 : game.tick - fromTick;   // ticks that already passed
+    while (late > 0 && plan.length) {
+      const cut = Math.min(late, plan[0].ticks);
+      plan[0].ticks -= cut; late -= cut;
+      if (plan[0].ticks <= 0) plan.shift();
+    }
+    return late === 0 ? "ok" : "plan arrived too late";
+  },
+  state() { return Runner.getState(game); },
+  tape() { return game.log; },         // every action the game received, one per tick
+};
+
+// Keyboard for humans (live mode).
+const KEYS = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", " ": "space", x: "x", y: "y" };
+document.addEventListener("keydown", (e) => {
+  if (e.key === "r") { env.reset({ seed: game.seed + 1, actionDelay: game.actionDelay, mode, tps }); return; }
+  const b = KEYS[e.key];
+  if (b && !keys.includes(b)) keys = keys.concat(b);
+  if (b) e.preventDefault();
+});
+document.addEventListener("keyup", (e) => {
+  const b = KEYS[e.key];
+  if (b) keys = keys.filter((x) => x !== b);
+});
+canvas.addEventListener("mousedown", (e) => {
+  const r = canvas.getBoundingClientRect();
+  clickOnce = [Math.round(e.clientX - r.left), Math.round(e.clientY - r.top)];
+});
+
+env.reset({
+  seed: Number(params.get("seed") ?? 1),
+  tps: Number(params.get("tps") ?? 24),
+  actionDelay: Number(params.get("delay") ?? 0),
+  mode: params.get("mode") ?? "live",
+});
+</script>
+</body>
+</html>
