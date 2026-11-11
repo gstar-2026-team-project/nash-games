@@ -22,7 +22,7 @@ The game runs in two modes:
 |---|---|---|
 | bot reading state, presses now, 0.25 s thinking | 100% | 21% |
 | bot reading state, sends a timed plan, 1 s thinking | 100% | 100% |
-| Claude from screenshots only, timed plans, ~8.5 s per decision | 100% | crashed at the first obstacle |
+| Claude from screenshots only, timed plans, ~8.5 s per decision while first obstacle ~2.1s | 100% | crashed at the first obstacle |
 
 21% = crashed at the first obstacle. Paused hides the problem; live, a slow agent fails unless it plans ahead, and an obstacle is visible only ~2.7 s before it hits. Bots: 20 s runs, seeds 1–3 ([full table](runner-v0/results.md)). Claude: one 30 s run, seed 5.
 
@@ -31,10 +31,10 @@ The game runs in two modes:
 - Most game-agent results are reported paused. This game measures the same agent paused and live.
 - Action chunking (timed plans) has not been tested for LLM game agents. The env supports it directly (`setPlan`).
 - Few realtime tasks use pixels and low-level buttons while staying easy for humans.
-- Post-training against a live clock is open. Seeded games and replayable action tapes make rollouts cheap.
+- Post-training against a live clock is open.
 
 ## Open questions
 
-- How fast must a pixel-reading model be to survive live with timed plans? (Real API latency, not a tool loop.)
+- How fast must a pixel-reading model be to survive live with timed plans? (Real API/Inference latency.)
 - How much does the on-screen time ruler help a model reading frames?
 - Which clock for training: wall clock, or a reproducible token clock / latency injection?
