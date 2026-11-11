@@ -2,22 +2,39 @@
 
 Game environments for the GStar Bootcamp 2026 team project (LLMs that sense, think and act in realtime).
 
-| Folder | Game | Play on the web |
-| --- | --- | --- |
-| [`runner-v0/`](runner-v0/) | **Runner v0**: jump over boxes, duck under bars. A tiny game for testing the env interface: paused mode (the game waits for the agent) and live mode (24 ticks per second, the game does not wait), plus timed plans and action delay. | [runner-v0/](https://gstar-2026-team-project.github.io/nash-games/runner-v0/) |
+## Game: Runner v0
 
-## First result: reading state vs reading screenshots
+[Play it](https://gstar-2026-team-project.github.io/nash-games/runner-v0/) · [code and env API](runner-v0/README.md)
 
-- **Paused:** the game freezes after every frame and waits until the agent answers. Thinking time is free, like a turn-based game. Most published game-agent results run this way.
-- **Live:** the game keeps running at 24 ticks per second while the agent thinks. Each second of thinking moves the world 24 ticks closer to the next obstacle.
+The player runs on its own. Jump over **red boxes** (Space), duck under **orange bars** (hold Down). Score = ticks survived; touching anything ends the run. Screen 768×768, 24 ticks per second.
 
-| what the agent sees | paused | live, 24 ticks/s |
+The game runs in two modes:
+- **Paused:** the game freezes after every frame and waits for the agent. Thinking is free.
+- **Live:** the game keeps running while the agent thinks. One second of thinking = 24 ticks closer to the next obstacle.
+
+| start | jump | duck | crash |
+|---|---|---|---|
+| ![](runner-v0/screenshots/1-start.png) | ![](runner-v0/screenshots/2-jump.png) | ![](runner-v0/screenshots/3-duck.png) | ![](runner-v0/screenshots/4-crash.png) |
+
+## Results
+
+| agent | paused | live, 24 ticks/s |
 |---|---|---|
-| **state numbers** (`env.state()`), planner bot | 100% | **100%** |
-| **screenshot only** (Claude Code, 384 px frames) | 100% | **crashed at the first obstacle** |
+| bot reading state, presses now, 0.25 s thinking | 100% | 21% |
+| bot reading state, sends a timed plan, 1 s thinking | 100% | 100% |
+| Claude from screenshots only, timed plans, ~8.5 s per decision | 100% | crashed at the first obstacle |
 
-Paused hides the problem: both agents are perfect when the game waits. Live, the screenshot player took ~8.5 s per decision and saw obstacles only ~2.7 s ahead. One seed, one run per cell; details and caveats in [`runner-v0/README.md`](runner-v0/README.md#headline-reading-state-vs-reading-screenshots).
+21% = crashed at the first obstacle. Paused hides the problem; live, a slow agent fails unless it plans ahead, and an obstacle is visible only ~2.7 s before it hits. Bots: 20 s runs, seeds 1–3 ([full table](runner-v0/results.md)). Claude: one 30 s run, seed 5.
 
-No dependencies for the game itself: open `runner-v0/index.html` in a browser, or run `node runner-v0/test.js` to check the rules. See [`runner-v0/README.md`](runner-v0/README.md) for the interface and the first paused-vs-live results.
+## Gaps this can fill
 
-Every push to `main` runs the tests and deploys to GitHub Pages through [`.github/workflows/pages.yml`](.github/workflows/pages.yml).
+- Most game-agent results are reported paused. This game measures the same agent paused and live.
+- Action chunking (timed plans) has not been tested for LLM game agents. The env supports it directly (`setPlan`).
+- Few realtime tasks use pixels and low-level buttons while staying easy for humans.
+- Post-training against a live clock is open. Seeded games and replayable action tapes make rollouts cheap.
+
+## Open questions
+
+- How fast must a pixel-reading model be to survive live with timed plans? (Real API latency, not a tool loop.)
+- How much does the on-screen time ruler help a model reading frames?
+- Which clock for training: wall clock, or a reproducible token clock / latency injection?

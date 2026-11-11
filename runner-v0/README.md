@@ -1,113 +1,27 @@
 # Runner v0
 
-A tiny HTML game for testing our env interface before we build the real game.
+Game description and results: [root README](../README.md). This page is the reference for running it and for harnesses.
 
-The player runs automatically. **Small red boxes**: jump (Space). **Tall orange bars** (they come down from the top and stop just above the ground): duck under them (hold Down). The score goes up 1 per tick; you lose when you touch anything. A run ends after 60 s of game time.
+## Run
 
-On screen: the **time ruler** on the ground shows when an obstacle will hit you (an obstacle's left edge at the "1s" mark hits 1 s of game time later), and one guidance line under it says which key goes with which colour.
+- Play: open `index.html`. Space = jump, Down = duck, R = restart. URL options: `?seed=3&tps=12&delay=6&mode=paused`.
+- Rules check: `node test.js`. Page check: `node browser-test.js`. Paused vs live experiment: `node play.js` (~5 min, writes `results.md`). The last two need `npm install playwright && npx playwright install chromium`.
 
-| start | jump | duck | crash |
-|---|---|---|---|
-| ![](screenshots/1-start.png) | ![](screenshots/2-jump.png) | ![](screenshots/3-duck.png) | ![](screenshots/4-crash.png) |
+## Env API (`window.env`)
 
-## Headline: reading state vs reading screenshots
-
-- **Paused:** the game freezes after every frame and waits until the agent answers. Thinking time is free, like a turn-based game. Most published game-agent results run this way.
-- **Live:** the game keeps running at 24 ticks per second while the agent thinks. Each second of thinking moves the world 24 ticks closer to the next obstacle.
-
-| what the agent sees | paused (the game waits) | live, 24 ticks/s (the game does not wait) |
+| call | mode | what it does |
 |---|---|---|
-| **state numbers** (`env.state()`), planner bot, 1 s of thinking | 100% | **100%** |
-| **screenshot only** (Claude Code, frames at 384 px, timed plans) | 100% (30 s survived, 13 decisions) | **crashed at the first obstacle** (4.3 s, the same as doing nothing) |
+| `reset({ seed, mode, tps, actionDelay, maxTicks })` | both | new game; returns the state |
+| `step(action)` | paused | advance one tick |
+| `setAction(action)` | live | hold this action until the next call |
+| `setPlan(steps, fromTick)` | live | timed steps `{ buttons, ticks }`; the part already in the past (since `fromTick`) is skipped |
+| `state()` | both | the game as numbers (for bots and debugging) |
+| `tape()` | both | every action received, one per tick; replaying it paused reproduces the run |
 
-- **Paused hides the problem.** Both agents are perfect when the game waits.
-- **Live, a slow pixel-reader fails at once.** About 8.5 s passed between a frame and Claude's plan, but an obstacle is visible only ~2.7 s before it hits.
-- **Caveats:**
-  - One seed (5) and one run per cell.
-  - The 8.5 s includes Claude Code's tool round trips, not only model thinking.
-  - The screenshot runs were played **before** the time ruler and the other clarity changes.
-  - The bot rows are 20 s runs on seeds 1–3 (full table below and in `results.md`).
+An action is `{ buttons: [...], click: [x, y] | null }`, buttons from `up down left right space x y`. This game uses `space` and `down`; the rest are logged and ignored. `actionDelay` makes an action land N ticks later.
 
-## Try it
+## Rules (`game.js`)
 
-- **Play it yourself:** open `index.html` in a browser. Space = jump, Down = duck, R = restart.
-  URL options: `index.html?seed=3&tps=12&delay=6` (seed, ticks per second, action delay in ticks).
-- **Check the rules (no browser):** `node test.js`
-- **Check the page (keyboard, click, clock):** `node browser-test.js`
-- **Paused vs live experiment:** `node play.js` (about 5 minutes; writes `results.md`)
-
-The last two need Playwright: `npm install playwright && npx playwright install chromium`.
-
-## The interface (what an agent sees and does)
-
-It follows the pending team interface: frames at a regular interval, actions at the same interval, and an action is a click and/or buttons.
-
-- **One tick = 1/24 s** of game time.
-- **What the agent sees:** the 768×768 canvas, as a screenshot. For debugging, and for simple bots, `env.state()` also returns the same information as numbers.
-- **An action:** `{ buttons: [...], click: [x, y] or null }`.
-  - Buttons: `up down left right space x y`.
-  - This game only uses `space` and `down`. Other buttons and clicks are accepted and logged, but do nothing here.
-- **Two modes:**
-
-| mode | the game clock | how the agent acts |
-|---|---|---|
-| `paused` | waits for the agent; thinking is free | `env.step(action)`: one tick per call |
-| `live` | runs on its own at `tps` ticks/s (24 = normal) | `env.setAction(action)`: held until the next call. Or `env.setPlan(steps, fromTick)`: a timed list such as "wait 10 ticks, then jump". `fromTick` is the tick of the frame the plan was made from, and the game skips the part that is already in the past. |
-
-- **Other knobs:**
-  - `actionDelay`: an action takes effect N ticks later. This is Huikang's "act X frames in advance".
-  - `seed`: the same seed with the same actions gives exactly the same game.
-- **Tape:** `env.tape()` returns every action the game received, one per tick. Replaying a tape in paused mode reproduces a live run exactly; this is checked for every run in `play.js`.
-
-## First result: thinking time only hurts when the game does not wait
-
-Both bots read the numbers (`env.state()`) and are perfect when given time; neither is an LLM. "Think" is a fake wait standing in for an LLM call. The runs are 20 s long with 3 seeds; the full table is in `results.md`. Re-run 2026-11-11 after the clarity pass (drawing only): same numbers.
-
-| bot | game clock | think 0 ms | 250 ms | 1 s | 2 s |
-|---|---|---|---|---|---|
-| any bot, **paused** | waits | 100% | 100% | 100% | 100% |
-| rule bot (presses now), live | 24 ticks/s | 100% | 21% | 21% | 21% |
-| planner bot (sends a timed plan), live | 24 ticks/s | 100% | **100%** | **100%** | 28% |
-| planner bot, live | 12 ticks/s (half speed) | 100% | 100% | 100% | **100%** |
-
-21% means the bot crashed into the first obstacle, the same score as doing nothing.
-
-**Played by sight (2026-11-11).** Claude Code played from screenshots only (downscaled to 384 px, no `env.state()`), sending timed plans, seed 5, before the clarity pass:
-
-| player | game clock | time per decision | result |
-|---|---|---|---|
-| Claude by sight, **paused** | waits | any | 30 s survived (720/720), 13 decisions |
-| Claude by sight, live | 24 ticks/s | ~8.5 s from frame to plan | crashed into the first bar at 4.3 s (103, = doing nothing) |
-
-What was hard to see, and what changed: the bar's bottom is only 20 px lower than the player's head, so "must I duck?" was not obvious (bars are now drawn down from the top, so they read as "go under"); the thin ropes were the most visible lines on screen (removed); timing needed pixel measuring (time ruler added); the small HUD line was ~9 px tall after downscaling (now larger); the crash banner hid the crash (moved up).
-
-What this shows:
-1. **Paused results say nothing about live play.** The same bot goes from 100% to 21% with only 0.25 s of thinking. Game-TARS and SpeedrunBench report paused or offline numbers.
-2. **Plans (macros) rescue slow thinkers.** "Wait 10 ticks, then jump" works with 1 s of thinking. "Jump now" does not work even at 0.25 s.
-3. **The limit is how far ahead you can see.** An obstacle is visible about 3 s before it arrives at 24 ticks/s. With 2 s of thinking, new obstacles appear while the bot is still thinking about the old frame, so it fails. At half speed it has 6 s of look-ahead and is fine.
-   - Rough rule: **look-ahead must be more than about 2× the thinking time.** This is the dial that makes the game "hard for slow models".
-   - A frontier LLM call is about 1–3 s, which is right at this edge.
-
-## Rules in numbers (all in `game.js`)
-
-- Player: 40×60 px (30 px tall when ducking) at x = 150.
-- Jump: 16 px/tick up, gravity 1.2, so about 1.1 s in the air and 106 px high.
-- Obstacles move 8 px/tick (192 px/s). A new one comes every 1.25–2.5 s, and each is a box or a bar with 50/50 odds.
-- A jump has a timing window of about 0.4 s. A bar must be ducked under for its whole pass (about 0.5 s).
-
-## Files
-
-| file | what |
-|---|---|
-| `game.js` | the rules only: `newGame`, `step`, `getState` (~150 lines, no drawing) |
-| `index.html` | drawing, keyboard, live clock, and the `env` API |
-| `bots.js` | idle, random, rule and planner bots |
-| `test.js` | 8 rule checks, no browser |
-| `browser-test.js` | 5 page checks: keyboard, clock, click, late plan, paused mode |
-| `play.js` | the paused vs live experiment → `results.md` |
-
-## Known limits
-
-- Live timing has some noise; the same setting can vary by a few ticks between runs.
-- The first obstacle always comes at the same time; only its type changes with the seed.
-- The time ruler is a visual hint: it makes timing easier to read from a frame, so screenshot results with and without it are not directly comparable.
+- 1 tick = 1/24 s. Player 40×60 px (30 px ducking) at x = 150. Jump ≈ 1.1 s, 106 px high.
+- Obstacles move 8 px/tick, one every 1.25–2.5 s, box or bar at 50/50. Bars cannot be jumped.
+- The ground ruler marks when an obstacle's left edge hits the player (1s = 24 ticks).
