@@ -17,6 +17,12 @@ A change is done when it is tested, played by sight, its numbers are re-run, it 
 - **The real limit is look-ahead.** An agent needs to see roughly 2× its thinking time ahead. When you change speed or screen layout, re-check how far ahead a player can see.
 - **Lowering one speed can make a game harder.** Halving obstacle speed made jumps harder, because the jump window shrank. To change time pressure, change the clock (`tps`), not single speeds.
 - **Keep it small.** The owner wants code that is simple to read and control: plain JavaScript, no build step, no framework, short files, plain words in comments.
+- **By sight, a real slow player behaves like the planner bot.** Claude playing from 384 px screenshots survived 30 s paused with 13 timed plans (one look per 1–2 obstacles), but live at 24 ticks/s took ~8.5 s from frame to plan and died at the first obstacle. Timed plans are what make by-sight play possible at all.
+- **Look at frames downscaled (384 px, and once at 192 px).** That is what a model sees. A rule carried by a few pixels is invisible there: the bar's bottom was only 20 px below the player's head. Thin lines (the old ropes) become the most visible thing on screen.
+- **Draw the rule, not the object.** A bar drawn down from the top reads as "go under" with no explanation. A time ruler on the ground (marks at `PLAYER_X + PLAYER_W + speed * 24 * t`) turns "measure pixels and divide" into "read a number". Keep overlays and text out of the play area, including the crash banner.
+- **A tiny sight-play driver makes §4 cheap.** One long-running Playwright page behind a localhost HTTP server with `/reset`, `/shot` (save + downscale with `sips -Z 384`) and `/plan` (paused: step it; live: `setPlan(plan, tickOfShot)`), and you only ever look at the PNG.
+- **`setPlan` replies "ok" even after the game has ended.** A harness must check `state().done`, not the reply.
+- **Setup on the Mac:** the repo has no `package.json`, so `npm install --no-save playwright` lands in the nearest parent that has one (`~/node_modules`). Then run `npx playwright install chromium`: an older cached browser does not match a newer Playwright.
 
 ## 1. Where things live
 
