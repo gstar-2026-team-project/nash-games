@@ -1,10 +1,12 @@
-# Anh's game environments
+# Nash's game environments
 
 Game environments for the GStar Bootcamp 2026 team project (LLMs that sense, think and act in realtime).
 
 | Folder | Game | Play on the web |
 | --- | --- | --- |
 | [`runner-v0/`](runner-v0/) | **Runner v0**: jump over boxes, duck under bars. A tiny game for testing the env interface: paused mode (the game waits for the agent) and live mode (24 ticks per second, the game does not wait), plus timed plans and action delay. | [runner-v0/](https://gstar-2026-team-project.github.io/nash-games/runner-v0/) |
+
+**First result:** an agent that reads the game state (`env.state()`) scores 100%, paused or live. Claude playing from **screenshots** survives when the game waits, and crashes into the first obstacle when it does not. Details in [`runner-v0/README.md`](runner-v0/README.md#headline-reading-state-vs-reading-screenshots).
 
 No dependencies for the game itself: open `runner-v0/index.html` in a browser, or run `node runner-v0/test.js` to check the rules. See [`runner-v0/README.md`](runner-v0/README.md) for the interface and the first paused-vs-live results.
 

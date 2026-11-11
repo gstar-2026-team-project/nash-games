@@ -10,6 +10,21 @@ On screen: the **time ruler** on the ground shows when an obstacle will hit you 
 |---|---|---|---|
 | ![](screenshots/1-start.png) | ![](screenshots/2-jump.png) | ![](screenshots/3-duck.png) | ![](screenshots/4-crash.png) |
 
+## Headline: reading state vs reading screenshots
+
+| what the agent sees | paused (the game waits) | live, 24 ticks/s (the game does not wait) |
+|---|---|---|
+| **state numbers** (`env.state()`), planner bot, 1 s of thinking | 100% | **100%** |
+| **screenshot only** (Claude Code, frames at 384 px, timed plans) | 100% (30 s survived, 13 decisions) | **crashed at the first obstacle** (4.3 s, the same as doing nothing) |
+
+- **Paused hides the problem.** Both agents are perfect when the game waits.
+- **Live, a slow pixel-reader fails at once.** About 8.5 s passed between a frame and Claude's plan, but an obstacle is visible only ~2.7 s before it hits.
+- **Caveats:**
+  - One seed (5) and one run per cell.
+  - The 8.5 s includes Claude Code's tool round trips, not only model thinking.
+  - The screenshot runs were played **before** the time ruler and the other clarity changes.
+  - The bot rows are 20 s runs on seeds 1–3 (full table below and in `results.md`).
+
 ## Try it
 
 - **Play it yourself:** open `index.html` in a browser. Space = jump, Down = duck, R = restart.
@@ -93,7 +108,8 @@ What this shows:
 1. Do we keep **both modes** (paused and live) in the interface? I think yes: the gap between them is the measurement.
 2. Should **plans/macros** (`setPlan`) be part of the standard interface, or only something a harness builds on top?
 3. What does the LLM get? A screenshot every k ticks (cost: ~1k+ tokens per frame), a short clip, or numbers? These bots cheat by reading numbers.
-4. Next step: plug in a real model (frontier plus a small open model) as the "think" step. Then, the arena game with click + all 7 buttons.
+4. **The time ruler is a hint.** It turns "judge the distance" into "read a number", so it makes the game easier for a model. Should it be switchable (e.g. `?ruler=0`), with every model measured both ways to see how much the visual hint helps? (Not built yet.)
+5. Next step: plug in a real model (frontier plus a small open model) as the "think" step. Then, the arena game with click + all 7 buttons.
 
 Known limits:
 - Live timing has some noise; the same setting can vary by a few ticks between runs.
