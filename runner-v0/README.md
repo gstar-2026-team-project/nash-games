@@ -12,6 +12,9 @@ On screen: the **time ruler** on the ground shows when an obstacle will hit you 
 
 ## Headline: reading state vs reading screenshots
 
+- **Paused:** the game freezes after every frame and waits until the agent answers. Thinking time is free, like a turn-based game. Most published game-agent results run this way.
+- **Live:** the game keeps running at 24 ticks per second while the agent thinks. Each second of thinking moves the world 24 ticks closer to the next obstacle.
+
 | what the agent sees | paused (the game waits) | live, 24 ticks/s (the game does not wait) |
 |---|---|---|
 | **state numbers** (`env.state()`), planner bot, 1 s of thinking | 100% | **100%** |
