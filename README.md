@@ -34,9 +34,9 @@ The game runs in two modes:
 
 ## Literature review (short)
 
-A short version for this repo. The full review is [huikang-literature-review](https://github.com/gstar-2026-team-project/huikang-literature-review).
+A short version for this repo. Also, Huikang provided very comprehensive review in [huikang-literature-review](https://github.com/gstar-2026-team-project/huikang-literature-review).
 
-**1. The loop.** A game or computer-use agent runs *frame → think → action*, again and again.
+**1. The loop.** A game do like computer-use agent runs *frame → think → action*, again and again.
 
 **2. The problem.** Most benchmarks let the world wait while the model thinks. A real game does not: at 24 FPS, 2 s of thinking means 48 frames missed.
 
