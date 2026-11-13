@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Fireline v0</title>
 <style>
-  body { margin: 0; background: #222; color: #ddd; font: 16px monospace; display: flex; flex-direction: column; align-items: center; }
+  body { margin: 0; background: #101b22; color: #dce6ea; font: 16px monospace; display: flex; flex-direction: column; align-items: center; }
   canvas { display: block; cursor: crosshair; }
   #runs { padding: 8px; max-width: 768px; }
 </style>
@@ -41,39 +41,122 @@ let humanPlayed = false;                    // did a person touch the controls i
 let timer = null;
 let startTime = 0;
 
+function disc(x, y, radius, color) {
+  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+}
+
 function drawCell(cell, col, row) {
   const x = col * F.CELL, y = F.TOP + row * F.CELL, s = F.CELL;
-  if (cell.kind === "street") { ctx.fillStyle = "#8d9299"; ctx.fillRect(x, y, s, s); return; }
-  ctx.fillStyle = "#b9d98a"; ctx.fillRect(x, y, s, s);                    // grass under everything else
-  if (cell.kind === "yard") return;
-
-  if (cell.state === "burnt") {                                           // a black ruin
-    ctx.fillStyle = "#262626"; ctx.fillRect(x + 4, y + 4, s - 8, s - 8);
+  if (cell.kind === "street") {
+    ctx.fillStyle = "#647580"; ctx.fillRect(x, y, s, s);
+    // Curbs mark the blocks; short lane marks leave the cell names clear.
+    ctx.fillStyle = "#bac4bb";
+    if (F.cellAt(game, col - 1, row)?.kind !== "street" && col > 0) ctx.fillRect(x, y, 3, s);
+    if (F.cellAt(game, col + 1, row)?.kind !== "street" && col < F.COLS - 1) ctx.fillRect(x + s - 3, y, 3, s);
+    if (F.cellAt(game, col, row - 1)?.kind !== "street" && row > 0) ctx.fillRect(x, y, s, 3);
+    if (F.cellAt(game, col, row + 1)?.kind !== "street" && row < F.ROWS - 1) ctx.fillRect(x, y + s - 3, s, 3);
+    ctx.fillStyle = "#8999a1";
+    if ([0, 4, 9, 13].includes(row)) ctx.fillRect(x + 17, y + 7, 14, 2);
+    else ctx.fillRect(x + 7, y + 17, 2, 14);
+    return;
+  }
+  ctx.fillStyle = (col + row) % 2 ? "#a0bb83" : "#96b17d"; ctx.fillRect(x, y, s, s);
+  if (cell.kind === "yard") {
+    ctx.fillStyle = "#7f9e68"; ctx.fillRect(x + 12, y + 30, 3, 4); ctx.fillRect(x + 33, y + 14, 3, 4);
+    return;
+  }
+  if (cell.state === "burnt") {
+    ctx.fillStyle = "#353b36"; ctx.fillRect(x + 5, y + 5, 38, 38);
+    ctx.fillStyle = "#656359"; ctx.fillRect(x + 8, y + 9, 6, 27); ctx.fillRect(x + 8, y + 33, 28, 6);
+    ctx.fillStyle = "#202722"; ctx.fillRect(x + 19, y + 12, 17, 8); ctx.fillRect(x + 23, y + 23, 9, 7);
     return;
   }
   if (cell.kind === "house") {
-    ctx.fillStyle = "#f6f1e7"; ctx.fillRect(x + 4, y + 4, s - 8, s - 8);
-    ctx.fillStyle = "#8a5a44"; ctx.fillRect(x + 4, y + 4, s - 8, 10);      // roof edge
-    if (cell.hp < 100) { ctx.fillStyle = `rgba(40,40,40,${0.7 * (1 - cell.hp / 100)})`; ctx.fillRect(x + 4, y + 4, s - 8, s - 8); }  // damage
+    ctx.fillStyle = "#78906a"; ctx.fillRect(x + 9, y + 9, 36, 36);
+    ctx.fillStyle = "#f2dfba"; ctx.fillRect(x + 6, y + 8, 34, 34);
+    ctx.fillStyle = "#594b3b"; ctx.fillRect(x + 20, y + 33, 8, 9);
+    ctx.fillStyle = "#dee5d5"; ctx.fillRect(x + 10, y + 32, 6, 5); ctx.fillRect(x + 31, y + 32, 5, 5);
+    ctx.fillStyle = "#986653"; ctx.beginPath();
+    ctx.moveTo(x + 3, y + 18); ctx.lineTo(x + 23, y + 4); ctx.lineTo(x + 43, y + 18); ctx.lineTo(x + 43, y + 30); ctx.lineTo(x + 3, y + 30); ctx.fill();
+    ctx.fillStyle = "#714d42"; ctx.beginPath(); ctx.moveTo(x + 23, y + 4); ctx.lineTo(x + 43, y + 18); ctx.lineTo(x + 43, y + 30); ctx.lineTo(x + 23, y + 20); ctx.fill();
+    ctx.strokeStyle = "#bd8c6c"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 4, y + 19); ctx.lineTo(x + 23, y + 6); ctx.stroke();
+    ctx.fillStyle = "#d4c1a2"; ctx.fillRect(x + 10, y + 8, 5, 10);
   } else {
-    ctx.fillStyle = "#2e7d32"; ctx.beginPath(); ctx.arc(x + s / 2, y + s / 2, 17, 0, 7); ctx.fill();
+    ctx.fillStyle = "#78654c"; ctx.fillRect(x + 21, y + 25, 7, 17);
+    disc(x + 26, y + 27, 18, "#708a5e"); disc(x + 22, y + 20, 17, "#296341");
+    disc(x + 32, y + 22, 12, "#377c4c"); disc(x + 18, y + 15, 10, "#4a8e56");
   }
-  if (cell.state === "burning") {                                         // the bigger the fire, the bigger the flame
-    const size = 10 + 14 * cell.fire / 100;
-    ctx.fillStyle = "#ff3d00"; ctx.beginPath(); ctx.arc(x + s / 2, y + s / 2, size, 0, 7); ctx.fill();
-    ctx.fillStyle = "#ffd600"; ctx.beginPath(); ctx.arc(x + s / 2, y + s / 2, size / 2, 0, 7); ctx.fill();
-    ctx.lineWidth = 3; ctx.strokeStyle = "#000"; ctx.strokeRect(x + 3, y + 3, s - 6, s - 6);
-    const w = F.WIND[game.wind], mx = x + s / 2 + w.dc * 19, my = y + s / 2 + w.dr * 19;   // a yellow wedge on the side the fire is blown to
-    ctx.fillStyle = "#ffd600"; ctx.beginPath();
-    ctx.moveTo(mx + w.dc * 7, my + w.dr * 7); ctx.lineTo(mx + w.dr * 9, my + w.dc * 9); ctx.lineTo(mx - w.dr * 9, my - w.dc * 9); ctx.fill();
-    ctx.font = "bold 20px monospace"; ctx.textAlign = "center";             // the cell's name, so a fire inside a block can be named
-    ctx.lineWidth = 4; ctx.strokeStyle = "#fff"; ctx.fillStyle = "#000";
-    const name = String.fromCharCode(65 + col) + (row + 1);
-    ctx.strokeText(name, x + s / 2, y + s / 2 + 7); ctx.fillText(name, x + s / 2, y + s / 2 + 7);
-  } else if (cell.wet > 0) {                                              // soaked: a blue frame that thins as it dries
-    ctx.lineWidth = 2 + 5 * cell.wet / F.WET_TICKS; ctx.strokeStyle = "#1e88e5"; ctx.strokeRect(x + 5, y + 5, s - 10, s - 10);
-  } else if (cell.heat > 0.3 * F.BURNS[cell.kind].ignite) {               // about to catch fire: an orange frame
+  if (cell.hp < F.BURNS[cell.kind].hp) {
+    ctx.fillStyle = `rgba(25,30,27,${0.7 * (1 - cell.hp / F.BURNS[cell.kind].hp)})`; ctx.fillRect(x + 4, y + 4, 40, 40);
+  }
+  if (cell.state === "burning") drawFire(cell, x, y, col + row * F.COLS);
+  else if (cell.wet > 0) {
+    ctx.lineWidth = 2 + 5 * cell.wet / F.WET_TICKS; ctx.strokeStyle = "#1ba5e5"; ctx.strokeRect(x + 5, y + 5, s - 10, s - 10);
+  } else if (cell.heat > 0.3 * F.BURNS[cell.kind].ignite) {
     ctx.lineWidth = 4; ctx.strokeStyle = "#ff9800"; ctx.strokeRect(x + 4, y + 4, s - 8, s - 8);
+  }
+}
+
+function drawFire(cell, x, y, phase) {
+  const wind = F.WIND[game.wind], wave = Math.sin(game.tick * 0.55 + phase);
+  const height = 17 + cell.fire * 0.12, lean = wind.dc * 3 + wave * 2;
+  // Smoke stays inside its cell, so it cannot hide a neighbouring fire or street.
+  ctx.save(); ctx.beginPath(); ctx.rect(x + 3, y + 3, 42, 42); ctx.clip();
+  disc(x + 25 + wind.dc * 7, y + 9 + wave * 2, 10, "rgba(48,53,51,0.48)");
+  disc(x + 19 + wind.dc * 3, y + 6 - wave, 8, "rgba(103,106,99,0.48)");
+  disc(x + 24, y + 26, 18, "rgba(255,73,16,0.25)");
+  for (let i = 0; i < 3; i++) {
+    const fx = x + 14 + i * 10, bottom = y + 34, h = height + (i === 1 ? 5 : -3);
+    ctx.fillStyle = "#f34d1d"; ctx.beginPath(); ctx.moveTo(fx - 8, bottom);
+    ctx.quadraticCurveTo(fx - 12, bottom - h * 0.45, fx + lean, bottom - h);
+    ctx.quadraticCurveTo(fx + 2, bottom - h * 0.5, fx + 7, bottom - h * 0.65);
+    ctx.quadraticCurveTo(fx + 12, bottom - 4, fx + 8, bottom); ctx.fill();
+    ctx.fillStyle = "#ffd75a"; ctx.beginPath(); ctx.moveTo(fx - 5, bottom);
+    ctx.quadraticCurveTo(fx - 5, bottom - 7, fx + lean * 0.5, bottom - h * 0.58);
+    ctx.quadraticCurveTo(fx + 8, bottom - 5, fx + 4, bottom); ctx.fill();
+  }
+  ctx.restore();
+  ctx.lineWidth = 2; ctx.strokeStyle = "#352b20"; ctx.strokeRect(x + 3, y + 3, 42, 42);
+  // A dark corner badge keeps the wind arrow distinct from the yellow flames and name tag.
+  const mx = x + 36, my = y + 12;
+  ctx.fillStyle = "#17202b"; ctx.fillRect(x + 28, y + 4, 16, 16);
+  ctx.fillStyle = "#ffe15b"; ctx.beginPath();
+  ctx.moveTo(mx + wind.dc * 6, my + wind.dr * 6); ctx.lineTo(mx - wind.dc * 3 + wind.dr * 4, my - wind.dr * 3 + wind.dc * 4); ctx.lineTo(mx - wind.dc * 3 - wind.dr * 4, my - wind.dr * 3 - wind.dc * 4); ctx.fill();
+}
+
+function drawTruck(tx, ty) {
+  const t = game.truck, dx = t.col - t.fromCol, dy = t.row - t.fromRow;
+  ctx.save(); ctx.translate(tx, ty); ctx.rotate(dx || dy ? Math.atan2(dy, dx) : 0);
+  ctx.fillStyle = "rgba(17,27,30,0.3)"; ctx.fillRect(-20, -10, 44, 28);
+  ctx.fillStyle = "#18242b";
+  for (const x of [-14, 11]) { ctx.fillRect(x, -17, 8, 7); ctx.fillRect(x, 10, 8, 7); }
+  ctx.fillStyle = "#a6232c"; ctx.fillRect(-22, -13, 44, 26);
+  ctx.fillStyle = "#e74743"; ctx.fillRect(-20, -11, 26, 22); ctx.fillRect(8, -12, 14, 24);
+  ctx.fillStyle = "#edf0df"; ctx.fillRect(-21, -11, 28, 3); ctx.fillRect(-21, 8, 28, 3);
+  ctx.fillStyle = "#9bd9e5"; ctx.fillRect(16, -9, 5, 18);
+  ctx.fillStyle = "#203842"; ctx.fillRect(9, -10, 5, 3); ctx.fillRect(9, 7, 5, 3);
+  // Ladder rails and rungs on the rear deck.
+  ctx.strokeStyle = "#dfe6e5"; ctx.lineWidth = 2; ctx.strokeRect(-18, -5, 22, 10);
+  for (let x = -14; x < 4; x += 5) { ctx.beginPath(); ctx.moveTo(x, -5); ctx.lineTo(x, 5); ctx.stroke(); }
+  const flash = Math.floor(game.tick / 6) % 2;
+  ctx.fillStyle = flash ? "#e6f9ff" : "#39a6ed"; ctx.fillRect(7, -6, 5, 5);
+  ctx.fillStyle = flash ? "#fa6662" : "#fff0cc"; ctx.fillRect(7, 1, 5, 5);
+  ctx.fillStyle = "#ffe9ad"; ctx.fillRect(21, -10, 2, 4); ctx.fillRect(21, 6, 2, 4);
+  ctx.restore();
+}
+
+function drawWater(tx, ty) {
+  if (!game.spray) return;
+  const [sx, sy] = game.spray, dx = sx - tx, dy = sy - ty, distance = Math.hypot(dx, dy);
+  const nx = distance ? -dy / distance : 0, ny = distance ? dx / distance : 0;
+  ctx.lineCap = "round"; ctx.strokeStyle = "rgba(27,147,215,0.65)"; ctx.lineWidth = 9;
+  ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(sx, sy); ctx.stroke();
+  ctx.strokeStyle = "#d3f4ff"; ctx.lineWidth = 3; ctx.stroke(); ctx.lineCap = "butt";
+  for (let i = 0; i < 7; i++) {
+    const part = ((game.tick * 0.12 + i / 7) % 1), spread = Math.sin(i * 9 + game.tick) * 3 * part;
+    disc(tx + dx * part + nx * spread, ty + dy * part + ny * spread, 2, "#f0fbff");
+    const angle = i * Math.PI * 2 / 7 + game.tick * 0.25, radius = 6 + (game.tick + i * 3) % 9;
+    disc(sx + Math.cos(angle) * radius, sy + Math.sin(angle) * radius, 2.5, "#b8edff");
   }
 }
 
@@ -82,30 +165,36 @@ function draw() {
 
   // Cell names, printed on every street: column letters A to P along the streets that run across,
   // row numbers 1 to 14 along the streets that run down. A cell is named like "N8".
-  ctx.fillStyle = "#3c4046"; ctx.font = "bold 22px monospace"; ctx.textAlign = "center";
+  ctx.fillStyle = "#edf1eb"; ctx.font = "bold 22px monospace"; ctx.textAlign = "center";
   for (let row = 0; row < F.ROWS; row++) for (let col = 0; col < F.COLS; col++) {
     if (game.cells[row][col].kind !== "street") continue;
     const across = game.cells[row][(col + 1) % F.COLS].kind === "street" && game.cells[row][(col + F.COLS - 1) % F.COLS].kind === "street";
     ctx.fillText(across ? String.fromCharCode(65 + col) : String(row + 1), col * F.CELL + 24, F.TOP + row * F.CELL + 32);
   }
 
-  for (const h of game.hydrants) {                                        // hydrant: blue disc with an H
+  for (const h of game.hydrants) {                                        // blue hydrant, with an H at screenshot size
     const [x, y] = F.cellCentre(h.col, h.row);
-    ctx.fillStyle = "#0d47ff"; ctx.beginPath(); ctx.arc(x, y, 19, 0, 7); ctx.fill();
-    ctx.fillStyle = "#fff"; ctx.font = "bold 26px monospace"; ctx.fillText("H", x, y + 9);
+    disc(x, y, 20, "#163f62");
+    ctx.fillStyle = "#147dcc"; ctx.fillRect(x - 9, y - 12, 18, 27); ctx.fillRect(x - 16, y - 4, 32, 9);
+    disc(x, y - 12, 9, "#57bdf2");
+    ctx.fillStyle = "#a0e3ff"; ctx.fillRect(x - 11, y + 13, 22, 3);
+    ctx.fillStyle = "#fff"; ctx.font = "bold 23px monospace"; ctx.fillText("H", x, y + 9);
   }
 
   const [tx, ty] = F.truckPoint(game);
-  ctx.setLineDash([10, 6]); ctx.lineWidth = 4; ctx.strokeStyle = "#ffffff";                // how far the water reaches
+  ctx.setLineDash([10, 6]); ctx.lineWidth = 3; ctx.strokeStyle = "rgba(255,255,255,0.7)";   // how far the water reaches
   ctx.beginPath(); ctx.arc(tx, ty, F.RANGE, 0, 7); ctx.stroke(); ctx.setLineDash([]);
-  if (game.spray) {
-    ctx.lineWidth = 7; ctx.strokeStyle = "#29b6f6";
-    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(game.spray[0], game.spray[1]); ctx.stroke();
-    ctx.fillStyle = "#b3e5fc"; ctx.beginPath(); ctx.arc(game.spray[0], game.spray[1], 12, 0, 7); ctx.fill();
+  drawWater(tx, ty);
+  // Fire names go above the spray, so aiming at a fire does not hide its name.
+  ctx.font = "bold 19px monospace"; ctx.textAlign = "center";
+  for (let row = 0; row < F.ROWS; row++) for (let col = 0; col < F.COLS; col++) {
+    if (game.cells[row][col].state !== "burning") continue;
+    const [x, y] = F.cellCentre(col, row), name = String.fromCharCode(65 + col) + (row + 1);
+    const width = ctx.measureText(name).width + 4;
+    ctx.fillStyle = "#352b20"; ctx.fillRect(x - width / 2, y + 4, width, 19);
+    ctx.fillStyle = "#fff8dc"; ctx.fillText(name, x, y + 20);
   }
-  ctx.fillStyle = "#d50000"; ctx.fillRect(tx - 17, ty - 17, 34, 34);       // the truck
-  ctx.fillStyle = "#fff"; ctx.fillRect(tx - 17, ty - 4, 34, 8);
-  ctx.lineWidth = 3; ctx.strokeStyle = "#000"; ctx.strokeRect(tx - 17, ty - 17, 34, 34);
+  drawTruck(tx, ty);
   // A tag on the truck with the name of its cell, "+WATER" while the tank is filling,
   // and "BLOCKED" while a drive button is held with no street that way.
   const tag = String.fromCharCode(65 + game.truck.col) + (game.truck.row + 1) + (game.blocked ? " BLOCKED" : game.refilling ? " +WATER" : "");

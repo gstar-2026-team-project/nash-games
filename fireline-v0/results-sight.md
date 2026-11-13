@@ -1,6 +1,9 @@
 # Fireline v0: Claude playing from screenshots
 
 The model sees only the 384 px frame (never `env.state()`). 60 s runs, max score 100; one row = mean over its seeds.
+
+These baseline runs used the earlier graphics, before the truck, flame and town artwork was refreshed. The rules are unchanged, but these scores do not measure the refreshed graphics.
+
 press = one action per look; chunk = a timed plan per look; slow = a timed plan from a thinking model; hybrid = chunk + a thinking model leaving notes in parallel.
 Models run through `claude -p` (Claude Code subscription), so think time includes its overhead. Run with `node harness/sight.js`.
 

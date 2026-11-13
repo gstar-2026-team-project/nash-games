@@ -8,12 +8,12 @@ const manual = `You are playing a firefighting game from screenshots. Each scree
 
 THE MAP is a town seen from above, a grid of cells. A cell is named by its column letter and row number, like "N8". Column letters A to P are printed along every street that runs across, row numbers 1 to 14 along every street that runs down.
 - Grey = street. Your truck can only drive on streets: columns A, F, K, P and rows 1, 5, 10, 14.
-- Cream square with a brown roof edge = house. Green disc = tree. Plain light green = empty yard (cannot burn).
-- Red and yellow disc in a black frame = BURNING, with the cell's name printed on it; a bigger disc is a bigger fire and needs longer spraying. The small yellow wedge on its edge points where the wind pushes that fire. Black square = burnt down (lost).
-- A house that turned grey was damaged by a fire that is now out. It still stands and still counts, in part.
+- Cream walls with a brown pitched roof = house. Green leafy canopy = tree. Plain light green = empty yard (cannot burn).
+- Orange and yellow flames with smoke in a dark frame = BURNING, with the cell's name on a dark tag; taller flames mean a bigger fire that needs longer spraying. The yellow arrow on a dark badge at its upper right points where the wind pushes that fire. Dark rubble = burnt down (lost).
+- A darkened house was damaged by fire. If its flames are out, it still stands and still counts, in part.
 - Orange frame = hot, will catch fire soon. Blue frame = soaked, safe for a while; the frame gets thinner as it dries.
-- Red square with a white stripe = your fire truck. The white tag next to it names the cell it is on; it adds +WATER while the tank is filling, and BLOCKED while you are trying to drive where there is no street. The white dashed circle around it = how far your water reaches (3.5 cells).
-- Blue disc with a white H = hydrant.
+- Red truck with wheels, white stripes and a ladder = your fire truck. The white tag next to it names the cell it is on; it adds +WATER while the tank is filling, and BLOCKED while you are trying to drive where there is no street. The white dashed circle around it = how far your water reaches (3.5 cells). A pale blue jet and splashes show where water actually lands.
+- Blue hydrant with a white H = refill point.
 The dark strip on top shows TOWN (your score: percent of the houses still standing), the time, the WATER left (a number, full = 120), a yellow WIND arrow, and TRUCK: the name of the cell your truck is on.
 
 RULES. Fires start on their own, grow, and spread to neighbouring houses and trees: fastest in the direction the wind arrow points, slowest against it. Downwind a fire can even jump across a street. The wind changes now and then.

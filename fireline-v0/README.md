@@ -8,6 +8,10 @@ Game description and results: [root README](../README.md). This page is the refe
 - Rules check: `node test.js`. Page check: `node browser-test.js`. Paused vs live with the state-reading bot: `node play.js` (~12 min, writes `results.md`). The last two need `npm install playwright && npx playwright install chromium`.
 - A Claude model playing from screenshots: `node ../harness/sight.js .` (writes `results-sight.md`). Playing by sight yourself, or with a subagent: `node ../harness/sight-server.js . <folder for PNGs>`.
 
+## Display
+
+The town and truck are drawn with Canvas shapes; no image assets or build step are needed. Flames, smoke, emergency lights and water splashes animate from the game tick, so paused screenshots stay still. Fire names remain above the water jet, smoke stays inside its cell, and wind arrows have dark corner badges to separate them from the flames.
+
 ## Env API (`window.env`)
 
 Same contract as Runner v0, with one addition: an action's `click` is **held**, and plan steps can carry it.

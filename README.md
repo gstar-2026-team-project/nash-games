@@ -27,7 +27,7 @@ What it asks of a player, all at once:
 - **Tens of seconds:** which fire first, what to soak before it burns, when to drive back for water.
 - **Things you cannot know at the start:** where the next fire starts, when the wind turns.
 
-Everything a player needs is drawn: cell names on every street and on every fire, the truck's cell on a tag, the water left as a number, a wedge on each fire showing where the wind pushes it.
+Everything a player needs is drawn: cell names on every street and on every fire, the truck's cell on a tag, the water left as a number, an arrow on each fire showing where the wind pushes it.
 
 ## Game: Runner v0
 
@@ -49,8 +49,8 @@ Three kinds of player, all on the same games and seeds:
 | player | paused | live, 24 ticks/s |
 |---|---|---|
 | bot doing nothing | 45% | — |
-| bot reading state, presses now, 0.25 s thinking | 97% | 87% |
-| bot reading state, presses now, 1 s thinking | 97% | 63% |
+| bot reading state, presses now, 0.25 s thinking | 97% | 86% |
+| bot reading state, presses now, 1 s thinking | 97% | 64% |
 | Haiku from screenshots, one action per look (`press`) | 87% | 59% |
 | Haiku from screenshots, a plan per look (`chunk`) | 78% | 57% |
 | Opus (high) from screenshots, a plan per look (`slow`) | not run | 55% |
@@ -59,6 +59,8 @@ Three kinds of player, all on the same games and seeds:
 Scores are mean percent of house hp remaining after 60 s at level 2, seeds 1–3. The state-reading bot's paused baseline has no thinking-time penalty; its live results include the stated delay. The idle score is a deterministic reference. All recorded live runs replayed with matching scores. Full tables: [bots](fireline-v0/results.md), [Claude from screenshots](fireline-v0/results-sight.md); raw screenshot runs: [log](fireline-v0/sight-runs.jsonl).
 
 `press` and `chunk` have results in both modes. `slow` and `hybrid` still need paused runs before their thinking-time gaps can be compared. With only three seeds, these results are an initial baseline.
+
+The state-reading bot was rerun with the current graphics on Windows using Microsoft Edge; live scores include screenshot and browser overhead as well as the added thinking delay. The screenshot-agent baseline used the earlier graphics, so those scores should be remeasured before comparing agent performance on the new pictures.
 
 ### Runner v0
 
