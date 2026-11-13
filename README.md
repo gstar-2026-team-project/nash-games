@@ -44,7 +44,26 @@ Three kinds of player, all on the same games and seeds:
 - **Claude through `claude -p`**: a model that sees only the 384 px frame and answers with a short line of text, about 1 to 4 s per look (`harness/sight.js`).
 - **Claude subagent**: a Claude Code subagent that plays through a small local server with curl and by reading the saved frames, 7 to 17 s per look (`harness/sight-server.js`).
 
-FIRELINE_RESULTS
+### Fireline v0
+
+Score = percent of the town still standing after 60 s at level 2, mean of seeds 1–3. Doing nothing keeps 45%.
+
+| player | time per look | paused | live, 24 ticks/s |
+|---|---|---|---|
+| bot reading state, presses now | 0 / 0.25 / 1 / 4 s | 97% | 96% / 87% / 63% / 51% |
+| bot reading state, sends a plan that allows for its own delay | 0 / 0.25 / 1 / 4 s | 97% | 90% / 82% / 76% / 55% |
+| Haiku from screenshots, one action per look | 1.1–1.3 s | 87% | 59% |
+| Haiku from screenshots, a plan per look | 2.4–3.7 s | 78% | 57% |
+| Opus with thinking from screenshots, a plan per look | 3.9 s | not run | 55% |
+| Haiku plans + Opus notes in parallel (hybrid) | 3.1 s | not run | 53% |
+| Claude subagents by sight (Sonnet, Opus, Haiku; 6 games) | 7–17 s | 90–95% | 39–63% |
+
+Full tables: [bots](fireline-v0/results.md), [Claude from screenshots](fireline-v0/results-sight.md). Subagent games used seeds 4–8 and one game each, so they are a rough guide, not a matched comparison. Two subagents also played live at 6 ticks/s (a quarter speed): 55% and 57%.
+
+What it shows:
+- **Every Claude setup loses about a third of its paused score when the game does not wait.** The live scores sit on the bot's delay curve: Haiku at about 1.3 s per look scores like the bot at 1 s. Live, the time per look decides the score more than which model looks.
+- **Planning only pays when the plan allows for the delay.** A plan made from a frame that is 2 s old, with spray times for the fires as they were, did no better than doing nothing (44%). Adding the fire's growth during the delay raised it to 74%.
+- **The hybrid in its first form does not help** (53% vs 57% for the plans alone). The slow model's note arrives every few seconds as free text; the fast model does not use it much. This is the first architecture to improve.
 
 ### Runner v0
 
@@ -66,7 +85,12 @@ FIRELINE_RESULTS
 - **A plan made from an old frame goes wrong in two ways.** If the game skips the part of the plan that is already in the past, a plan that is relative to where the player stood ("drive right 2 cells") ends up somewhere else. And the world has moved on: a fire is bigger than it looked. A planner has to know its own delay.
 - **Models misname what they have to count.** Playing by sight, Sonnet and Opus were off by one column for fires inside a block. Printing the name on the thing itself fixed most of it.
 
-OPEN_QUESTIONS
+## Open questions
+
+- Fireline: how should a fast and a slow model share the work so the slow one helps? Ideas from the subagents themselves: the fast loop keeps the truck busy (spray the nearest fire, refill when low), the slow one picks which block to defend.
+- Is level 2 the right default, or should level 3 (greedy bot about 71, nobody about 2) be the headline?
+- Which clock for training: wall clock, or a reproducible token clock / latency injection?
+- Human baseline: the pages now list a person's finished runs under the game; still to be collected.
 
 ## Literature review (short)
 
