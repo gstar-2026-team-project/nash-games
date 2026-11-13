@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <title>Runner v0</title>
 <style>
-  body { margin: 0; background: #222; display: flex; justify-content: center; }
+  body { margin: 0; background: #222; color: #ddd; font: 16px monospace; display: flex; flex-direction: column; align-items: center; }
+  #runs { padding: 8px; max-width: 768px; }
   canvas { display: block; }
 </style>
 </head>
 <body>
 <canvas id="screen" width="768" height="768"></canvas>
+<div id="runs"></div>
 <script src="game.js"></script>
 <script>
 // Runner v0: drawing, keyboard, and the env API that bots use.
@@ -36,6 +38,7 @@ let mode = "live";
 let plan = [];                              // live mode: list of { buttons, ticks } still to do
 let keys = [];                              // buttons a human is holding on the keyboard
 let clickOnce = null;                       // a canvas click is sent for one tick only
+let humanPlayed = false;                    // did a person touch the keyboard in this run?
 let timer = null;
 let startTime = 0;
 
@@ -102,7 +105,7 @@ function liveLoop() {
     Runner.step(game, action);
   }
   draw();
-  if (game.done) stopClock();
+  if (game.done) { stopClock(); rememberRun(); }
 }
 
 function stopClock() { if (timer) { clearInterval(timer); timer = null; } }
@@ -113,6 +116,19 @@ function startClock() {
   timer = setInterval(liveLoop, 1000 / tps / 2);
 }
 
+// Keep a person's finished runs in this browser, and list them under the game (the human baseline).
+function rememberRun() {
+  let runs = [];
+  try { runs = JSON.parse(localStorage.getItem("runner-runs") || "[]"); } catch {}
+  if (humanPlayed && game.done) {
+    runs.push({ seed: game.seed, tps, score: game.score });
+    try { localStorage.setItem("runner-runs", JSON.stringify(runs)); } catch {}
+  }
+  document.getElementById("runs").textContent = runs.length
+    ? "Your runs: " + runs.map((r) => `seed ${r.seed}${r.tps === 24 ? "" : " tps " + r.tps} = ${r.score}`).join(" · ")
+    : "";
+}
+
 // The env API. Bots (play.js) only talk to the game through this.
 window.env = {
   reset(options = {}) {
@@ -120,7 +136,7 @@ window.env = {
     mode = options.mode ?? "live";
     tps = options.tps ?? 24;
     game = Runner.newGame({ seed: options.seed, speed: options.speed, actionDelay: options.actionDelay, maxTicks: options.maxTicks });
-    plan = []; keys = [];
+    plan = []; keys = []; humanPlayed = false;
     draw();
     if (mode === "live") startClock();
     return Runner.getState(game);
@@ -155,7 +171,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "r") { env.reset({ seed: game.seed + 1, actionDelay: game.actionDelay, mode, tps }); return; }
   const b = KEYS[e.key];
   if (b && !keys.includes(b)) keys = keys.concat(b);
-  if (b) e.preventDefault();
+  if (b) { humanPlayed = true; e.preventDefault(); }
 });
 document.addEventListener("keyup", (e) => {
   const b = KEYS[e.key];
@@ -172,6 +188,7 @@ env.reset({
   actionDelay: Number(params.get("delay") ?? 0),
   mode: params.get("mode") ?? "live",
 });
+rememberRun();
 </script>
 </body>
 </html>

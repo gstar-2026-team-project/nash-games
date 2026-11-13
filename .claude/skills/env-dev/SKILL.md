@@ -22,6 +22,12 @@ A change is done when it is tested, played by sight, its numbers are re-run, it 
 - **Draw the rule, not the object.** A bar drawn down from the top reads as "go under" with no explanation. A time ruler on the ground (marks at `PLAYER_X + PLAYER_W + speed * 24 * t`) turns "measure pixels and divide" into "read a number". Keep overlays and text out of the play area, including the crash banner.
 - **A tiny sight-play driver makes §4 cheap.** One long-running Playwright page behind a localhost HTTP server with `/reset`, `/shot` (save + downscale with `sips -Z 384`) and `/plan` (paused: step it; live: `setPlan(plan, tickOfShot)`), and you only ever look at the PNG.
 - **`setPlan` replies "ok" even after the game has ended.** A harness must check `state().done`, not the reply.
+- **A short reasoning puzzle does not make a fast model lose.** Haiku solved 10-step arithmetic chains and turn-by-turn robot puzzles (15/16 or better) in about 1.2 s. For Claude the limit is about 1 s per look, not depth of reasoning. Do not bolt a puzzle onto a reflex game to "add thinking"; make the world itself need choices (which fire first, when to refill).
+- **Prefer a score that falls gradually to instant death.** In Runner every slow agent dies at the first obstacle and all look the same. In Fireline the town burns a little more for every second lost, so every agent gets a different number.
+- **A plan made from an old frame must not overtake the player.** `setPlan(steps, fromTick)` skips the past part. That is right when the plan is tied to moving obstacles (Runner). It is wrong when the plan is relative to where the player stood (Fireline: "right 24" from a cell the truck has already left). There, start the plan on arrival and look again only when it has finished (`livePlan: "commit"` in `sight-config.js`).
+- **Models misname things they have to count.** Playing Fireline by sight, Sonnet and Opus were off by one column for fires inside a block, and unsure which cell the truck was on. Print the name on the thing itself: on each fire, on a tag next to the truck, on every street.
+- **Let subagents play-test.** `harness/sight-server.js` plus a subagent that may only use curl and Read on the returned PNGs gives a written report of what could not be seen. Two rounds found the label problems, a silent failure (driving into a block), and a rules hole (refilling while spraying gave endless water).
+- **One model job at a time.** Probes run beside a live baseline slowed its answers and spoiled the run.
 - **Setup on the Mac:** the repo has no `package.json`, so `npm install --no-save playwright` lands in the nearest parent that has one (`~/node_modules`). Then run `npx playwright install chromium`: an older cached browser does not match a newer Playwright.
 
 ## 1. Where things live
@@ -32,7 +38,9 @@ A change is done when it is tested, played by sight, its numbers are re-run, it 
 | Screen + API | `<game>/index.html` | Drawing, keyboard, the live clock, and `window.env`. Draws from the game state only. |
 | Bots | `<game>/bots.js` | Simple reference agents. Not the thing being tested. |
 | Checks | `test.js`, `browser-test.js` | Rules without a browser, then the page in a browser. |
-| Experiment | `play.js` → `results.md` | Paused vs live table. |
+| Experiment | `play.js` → `results.md` | Paused vs live table (state-reading bot). |
+| Model's view | `<game>/sight-config.js` | The manual a model gets, its answer format, how live plans are used. |
+| Sight play | `harness/sight.js` → `results-sight.md`, `harness/sight-server.js` | A Claude model, or a subagent, playing from 384 px frames only. |
 
 ## 2. The env API is a contract
 
