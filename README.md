@@ -7,7 +7,7 @@ Game environments for the GStar Bootcamp 2026 team project (LLMs that sense, thi
 | [Fireline v0](https://gstar-2026-team-project.github.io/nash-games/fireline-v0/) ([code and env API](fireline-v0/README.md)) | Drive a fire truck and spray water while fires spread with the wind. Save as much of the town as you can. | arrows + mouse | The general task: reflex, routing and priorities at the same time. Being slow costs a little at a time. |
 | [Runner v0](https://gstar-2026-team-project.github.io/nash-games/runner-v0/) ([code and env API](runner-v0/README.md)) | Jump over boxes, duck under bars. | two keys | The simple calibration task: pure reaction, one mistake ends the run. |
 
-Both games run in two modes, and every agent is measured in both:
+Both games run in two modes; comparing the same agent in both measures the cost of thinking time:
 - **Paused:** the game freezes after every frame and waits for the agent. Thinking is free.
 - **Live:** the game keeps running while the agent thinks. One second of thinking = 24 ticks of the world moving on.
 
@@ -44,7 +44,21 @@ Three kinds of player, all on the same games and seeds:
 - **Claude through `claude -p`**: a model that sees only the 384 px frame and answers with a short line of text, about 1 to 4 s per look (`harness/sight.js`).
 - **Claude subagent**: a Claude Code subagent that plays through a small local server with curl and by reading the saved frames, 7 to 17 s per look (`harness/sight-server.js`).
 
-FIRELINE_RESULTS
+### Fireline v0
+
+| player | paused | live, 24 ticks/s |
+|---|---|---|
+| bot doing nothing | 45% | — |
+| bot reading state, presses now, 0.25 s thinking | 97% | 87% |
+| bot reading state, presses now, 1 s thinking | 97% | 63% |
+| Haiku from screenshots, one action per look (`press`) | 87% | 59% |
+| Haiku from screenshots, a plan per look (`chunk`) | 78% | 57% |
+| Opus (high) from screenshots, a plan per look (`slow`) | not run | 55% |
+| Haiku + Opus (high) from screenshots, plans with background notes (`hybrid`) | not run | 53% |
+
+Scores are mean percent of house hp remaining after 60 s at level 2, seeds 1–3. The state-reading bot's paused baseline has no thinking-time penalty; its live results include the stated delay. The idle score is a deterministic reference. All recorded live runs replayed with matching scores. Full tables: [bots](fireline-v0/results.md), [Claude from screenshots](fireline-v0/results-sight.md); raw screenshot runs: [log](fireline-v0/sight-runs.jsonl).
+
+`press` and `chunk` have results in both modes. `slow` and `hybrid` still need paused runs before their thinking-time gaps can be compared. With only three seeds, these results are an initial baseline.
 
 ### Runner v0
 
@@ -60,13 +74,17 @@ FIRELINE_RESULTS
 
 ## What we learned
 
-- **Paused numbers say nothing about live play.** In both games every Claude setup is near the top when paused and far below it live.
+- **Paused numbers say nothing about live play.** In both games Claude setups measured in both modes score lower live; Fireline's Haiku `press` falls from 87% to 59%, and `chunk` from 78% to 57%.
 - **Instant death hides differences; a score that falls gradually shows them.** In Runner all slow agents get the same 21%. In Fireline each agent and each delay gets its own number.
 - **For Claude the limit is time per look, not depth of reasoning.** Haiku solved 10-step arithmetic and turn-by-turn puzzles in about 1.2 s (15/16 or better), so adding a puzzle to a reflex game would not make a fast model lose. The thinking has to be about the game itself.
 - **A plan made from an old frame goes wrong in two ways.** If the game skips the part of the plan that is already in the past, a plan that is relative to where the player stood ("drive right 2 cells") ends up somewhere else. And the world has moved on: a fire is bigger than it looked. A planner has to know its own delay.
 - **Models misname what they have to count.** Playing by sight, Sonnet and Opus were off by one column for fires inside a block. Printing the name on the thing itself fixed most of it.
 
-OPEN_QUESTIONS
+## Open questions
+
+- How large are the paused-to-live gaps for Fireline's `slow` and `hybrid` agents? Their paused runs are still missing.
+- Do the differences between screenshot agents hold across more seeds and other clock rates?
+- How much of the remaining gap comes from visual mistakes, action formatting, or thinking time?
 
 ## Literature review (short)
 
