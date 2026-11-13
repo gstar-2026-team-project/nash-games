@@ -12,5 +12,8 @@ Models run through `claude -p` (Claude Code subscription), so think time include
 | slow | opus (high) | live 24 ticks/s | 55 | 55% | 52, 45, 69 | 3/3 | 1, 2, 3 | 9 | 3.9 | - | yes |
 | chunk | haiku | paused | 78 | 78% | 79, 63, 93 | 3/3 | 1, 2, 3 | 19 | 2.4 | - | yes |
 | press | haiku | paused | 87 | 87% | 86, 85, 89 | 3/3 | 1, 2, 3 | 120 | 1.1 | - | yes |
+| chunk | haiku | live 12 ticks/s | 64 | 64% | 56, 58, 78 | 3/3 | 1, 2, 3 | 13 | 2.8 | - | yes |
+| slow | opus (high) | paused | 73 | 73% | 67, 79 | 2/2 | 1, 2 | 17 | 3.5 | - | yes |
+| hybrid | haiku + opus (high) | paused | 74 | 74% | 62, 87 | 2/2 | 1, 2 | 17 | 2.5 | 6 | yes |
 | bot doing nothing | - | paused | 45 | 45% | 40, 43, 53 | - | 1, 2, 3 | - | - | - | - |
 | greedy bot reading state, no delay | - | paused | 97 | 97% | 97, 97, 97 | - | 1, 2, 3 | - | - | - | - |

@@ -48,22 +48,23 @@ Three kinds of player, all on the same games and seeds:
 
 Score = percent of the town still standing after 60 s at level 2, mean of seeds 1–3. Doing nothing keeps 45%.
 
-| player | time per look | paused | live, 24 ticks/s |
-|---|---|---|---|
-| bot reading state, presses now | 0 / 0.25 / 1 / 4 s | 97% | 96% / 87% / 63% / 51% |
-| bot reading state, sends a plan that allows for its own delay | 0 / 0.25 / 1 / 4 s | 97% | 90% / 82% / 76% / 55% |
-| Haiku from screenshots, one action per look | 1.1–1.3 s | 87% | 59% |
-| Haiku from screenshots, a plan per look | 2.4–3.7 s | 78% | 57% |
-| Opus with thinking from screenshots, a plan per look | 3.9 s | not run | 55% |
-| Haiku plans + Opus notes in parallel (hybrid) | 3.1 s | not run | 53% |
-| Claude subagents by sight (Sonnet, Opus, Haiku; 6 games) | 7–17 s | 90–95% | 39–63% |
+| player | time per look | paused | live, 12 ticks/s | live, 24 ticks/s |
+|---|---|---|---|---|
+| bot reading state, presses now | 0 / 0.25 / 1 / 4 s | 97% | - | 96% / 87% / 63% / 51% |
+| bot reading state, sends a plan that allows for its own delay | 0 / 0.25 / 1 / 4 s | 97% | - | 90% / 82% / 76% / 55% |
+| Haiku from screenshots, one action per look | 1.1–1.3 s | 87% | - | 59% |
+| Haiku from screenshots, a plan per look | 2.4–3.7 s | 78% | 64% | 57% |
+| Opus with thinking from screenshots, a plan per look | 3.1–3.9 s | 73%* | - | 55% |
+| Haiku plans + Opus notes in parallel (hybrid) | 2.5–3.1 s | 74%* | - | 53% |
+| Claude subagents by sight (Sonnet, Opus, Haiku; 6 games) | 7–17 s | 90–95% | - | 39–63% |
 
-Full tables: [bots](fireline-v0/results.md), [Claude from screenshots](fireline-v0/results-sight.md). Subagent games used seeds 4–8 and one game each, so they are a rough guide, not a matched comparison. Two subagents also played live at 6 ticks/s (a quarter speed): 55% and 57%.
+\* seeds 1–2 only; Haiku's plans score 71% on the same two seeds. Full tables: [bots](fireline-v0/results.md), [Claude from screenshots](fireline-v0/results-sight.md). Subagent games used seeds 4–8 and one game each, so they are a rough guide, not a matched comparison. Two subagents also played live at 6 ticks/s (a quarter speed): 55% and 57%.
 
 What it shows:
 - **Every Claude setup loses about a third of its paused score when the game does not wait.** The live scores sit on the bot's delay curve: Haiku at about 1.3 s per look scores like the bot at 1 s. Live, the time per look decides the score more than which model looks.
 - **Planning only pays when the plan allows for the delay.** A plan made from a frame that is 2 s old, with spray times for the fires as they were, did no better than doing nothing (44%). Adding the fire's growth during the delay raised it to 74%.
-- **The hybrid in its first form does not help** (53% vs 57% for the plans alone). The slow model's note arrives every few seconds as free text; the fast model does not use it much. This is the first architecture to improve.
+- **A stronger model does not play better paused, in this setup.** Opus with thinking (73%) and the hybrid (74%) are level with Haiku's plans (71% on the same seeds), and below Haiku choosing one action per look (87%), which simply looks 6 times as often. Looking more often beats thinking harder here; the subagents, with no time pressure and their own tools, reach 90–95%.
+- **The hybrid in its first form does not help** (53% live vs 57% for the plans alone). The slow model's note arrives every few seconds as free text, and the fast model does not use it much. This is the first architecture to improve.
 
 ### Runner v0
 

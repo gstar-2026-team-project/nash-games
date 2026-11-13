@@ -194,6 +194,9 @@ async function main() {
     for (const agent of agents) for (const mode of modes) for (const seed of seeds) {
       if (AGENTS[agent].advisor && !game.askAdvice) continue;
       const row = await run(page, game, agent, mode, seed);
+      // A run where the model mostly gave no answer (for example a usage limit) measures nothing: report it, do not log it.
+      const empty = row.answers.filter((a) => !String(a[1]).startsWith("NOTE") && !String(a[1]).trim()).length;
+      if (empty > row.looks / 2) { console.log(agent, mode, "seed", seed, "-> NOT LOGGED:", empty, "of", row.looks, "answers were empty"); continue; }
       fs.appendFileSync(log, JSON.stringify(row) + "\n");
       console.log(agent, mode, "seed", seed, "->", row.score, row.result, "looks", row.looks, "think", row.medianThinkMs, "ms", row.notes ? "notes " + row.notes : "");
     }
